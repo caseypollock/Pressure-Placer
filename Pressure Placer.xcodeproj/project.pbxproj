@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C926BC732000A27900D46AC4 /* UISound - Heavy 3D Touch.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C926BC6F2000A27800D46AC4 /* UISound - Heavy 3D Touch.mp3 */; };
+		C926BC742000A27900D46AC4 /* UISound - Medium 3D Touch.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C926BC702000A27900D46AC4 /* UISound - Medium 3D Touch.mp3 */; };
+		C926BC752000A27900D46AC4 /* UISound - Soft 3D Touch.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C926BC712000A27900D46AC4 /* UISound - Soft 3D Touch.mp3 */; };
+		C926BC762000A27900D46AC4 /* UISound - Reset Scene.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = C926BC722000A27900D46AC4 /* UISound - Reset Scene.mp3 */; };
 		C957D4991F2D3FB80064F299 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C957D4981F2D3FB80064F299 /* AppDelegate.swift */; };
 		C957D49B1F2D3FB80064F299 /* art.scnassets in Resources */ = {isa = PBXBuildFile; fileRef = C957D49A1F2D3FB80064F299 /* art.scnassets */; };
 		C957D49D1F2D3FB80064F299 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C957D49C1F2D3FB80064F299 /* ViewController.swift */; };
@@ -16,6 +20,10 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C926BC6F2000A27800D46AC4 /* UISound - Heavy 3D Touch.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "UISound - Heavy 3D Touch.mp3"; sourceTree = "<group>"; };
+		C926BC702000A27900D46AC4 /* UISound - Medium 3D Touch.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "UISound - Medium 3D Touch.mp3"; sourceTree = "<group>"; };
+		C926BC712000A27900D46AC4 /* UISound - Soft 3D Touch.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "UISound - Soft 3D Touch.mp3"; sourceTree = "<group>"; };
+		C926BC722000A27900D46AC4 /* UISound - Reset Scene.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = "UISound - Reset Scene.mp3"; sourceTree = "<group>"; };
 		C957D4951F2D3FB70064F299 /* Pressure Placer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pressure Placer.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C957D4981F2D3FB80064F299 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C957D49A1F2D3FB80064F299 /* art.scnassets */ = {isa = PBXFileReference; lastKnownFileType = wrapper.scnassets; path = art.scnassets; sourceTree = "<group>"; };
@@ -37,6 +45,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C926BC6E2000A22900D46AC4 /* SoundFX */ = {
+			isa = PBXGroup;
+			children = (
+				C926BC6F2000A27800D46AC4 /* UISound - Heavy 3D Touch.mp3 */,
+				C926BC702000A27900D46AC4 /* UISound - Medium 3D Touch.mp3 */,
+				C926BC722000A27900D46AC4 /* UISound - Reset Scene.mp3 */,
+				C926BC712000A27900D46AC4 /* UISound - Soft 3D Touch.mp3 */,
+			);
+			path = SoundFX;
+			sourceTree = "<group>";
+		};
 		C957D48C1F2D3FB70064F299 = {
 			isa = PBXGroup;
 			children = (
@@ -56,6 +75,7 @@
 		C957D4971F2D3FB70064F299 /* Pressure Placer */ = {
 			isa = PBXGroup;
 			children = (
+				C926BC6E2000A22900D46AC4 /* SoundFX */,
 				C957D4981F2D3FB80064F299 /* AppDelegate.swift */,
 				C957D49A1F2D3FB80064F299 /* art.scnassets */,
 				C957D49C1F2D3FB80064F299 /* ViewController.swift */,
@@ -128,7 +148,11 @@
 				C957D49B1F2D3FB80064F299 /* art.scnassets in Resources */,
 				C957D4A51F2D3FB80064F299 /* LaunchScreen.storyboard in Resources */,
 				C957D4A21F2D3FB80064F299 /* Assets.xcassets in Resources */,
+				C926BC752000A27900D46AC4 /* UISound - Soft 3D Touch.mp3 in Resources */,
+				C926BC762000A27900D46AC4 /* UISound - Reset Scene.mp3 in Resources */,
 				C957D4A01F2D3FB80064F299 /* Main.storyboard in Resources */,
+				C926BC742000A27900D46AC4 /* UISound - Medium 3D Touch.mp3 in Resources */,
+				C926BC732000A27900D46AC4 /* UISound - Heavy 3D Touch.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

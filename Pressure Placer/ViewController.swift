@@ -7,135 +7,206 @@
 //
 
 import UIKit
-import SceneKit
 import ARKit
 import AVFoundation
 
 
 class ViewController: UIViewController, ARSCNViewDelegate {
     
-    var currentTouchPressure = 0.0
-    var finalTouchPressure = 0.0
-//    var timerStarted = false
-    var soundEffectPlayer: AVAudioPlayer!
-    var treeNode : SCNNode?
-    var pressureSize = "Soft Pressure"
-    var hitTransform : SCNMatrix4?
-    var hitPosition : SCNVector3?
-    var treeScale : SCNMatrix4?
-    
     @IBOutlet var sceneView: ARSCNView!
+    @IBOutlet weak var consoleLabel: UILabel!
+    @IBOutlet weak var planeDetectButton: UIButton!
+    
+    let scene = SCNScene()
+    let configuration = ARWorldTrackingConfiguration()
+    var uiSoundEngine = AVAudioPlayer()
+    var hitPosition : SCNVector3? //The 3D coordinates of your tap.
+    var hitTransform : SCNMatrix4?
+    var rootPlanePlaced = false
+    var rootPlaneHandicap = false
+    var finalTouchPressure = 0.0
+    
+    let arrayOfTrees = ["LP Tree Small.scn","LP Tree Medium.scn","LP Tree Large.scn","LP Tree Italian Cypress.scn"]
+
+    override var prefersStatusBarHidden: Bool {
+        return true
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         // Set the view's delegate
         sceneView.delegate = self
-        
-        // Show statistics such as fps and timing information
-        sceneView.showsStatistics = true
-        
-        // Create a new scene
-        let scene = SCNScene(named: "art.scnassets/LowPolyTree.dae")!
-        treeNode = scene.rootNode.childNode(withName: "lowPolyTreeNode", recursively: true)
-        treeNode?.position = SCNVector3Make(0, 0, -1)
-
         // Set the scene to the view
         sceneView.scene = scene
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        
-        // Create a session configuration
-        let configuration = ARWorldTrackingConfiguration()
-        configuration.planeDetection = .horizontal
-        
-        // Run the view's session
         sceneView.session.run(configuration)
+        // Do any additional setup a)fter loading the view, typically from a nib.
+        configuration.planeDetection = .horizontal
+        sceneView.autoenablesDefaultLighting = true
     }
     
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        
-        // Pause the view's session
-        sceneView.session.pause()
+    @objc func uiSoundFXEngine(playSound: String) {
+        do { if let selectedSound = Bundle.main.url(forResource: playSound, withExtension: "mp3") {
+            print(selectedSound.absoluteURL)
+            uiSoundEngine = try AVAudioPlayer(contentsOf: selectedSound)
+            uiSoundEngine.prepareToPlay()
+            uiSoundEngine.play()
+            }} catch let error as NSError { print(error.description) }
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Release any cached data, images, etc that aren't in use.
+    
+    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
+        // Update content only for plane anchors and nodes matching the setup created in `renderer(_:didAdd:for:)`.
+        guard let planeAnchor = anchor as?  ARPlaneAnchor,
+            let planeNode = node.childNodes.first,
+            let plane = planeNode.geometry as? SCNPlane
+            else { return }
+        // Plane estimation may shift the center of a plane relative to its anchor's transform.
+        planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
+        /*
+         Plane estimation may extend the size of the plane, or combine previously detected
+         planes into a larger one. In the latter case, `ARSCNView` automatically deletes the
+         corresponding node for one plane, then calls this method to update the size of
+         the remaining plane.
+         */
+        plane.width = CGFloat(planeAnchor.extent.x)
+        plane.height = CGFloat(planeAnchor.extent.z)
+    }
+    
+    func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
+        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
+        // Create a SceneKit plane to visualize the plane anchor using its position and extent.
+        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        let planeNode = SCNNode(geometry: plane)
+        planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
+        /*
+         `SCNPlane` is vertically oriented in its local coordinate space, so
+         rotate the plane to match the horizontal orientation of `ARPlaneAnchor`.
+         */
+        planeNode.eulerAngles.x = -.pi / 2
+        //        planeNode.geometry?.firstMaterial?.diffuse.contents = UIColor.yellow
+        planeNode.opacity = 0.0
+        node.addChildNode(planeNode)
+        if rootPlanePlaced != true {
+            rootPlanePlaced = true
+        }
     }
 
-    // MARK: - ARSCNViewDelegate
-    
-/*
-    // Override to create and configure nodes for anchors added to the view's session.
-    func renderer(_ renderer: SCNSceneRenderer, nodeFor anchor: ARAnchor) -> SCNNode? {
-        let node = SCNNode()
-     
-        return node
-    }
-*/
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        _ = Timer.scheduledTimer(timeInterval: 0.5, target: self, selector: #selector(self.whatsTheTouchPressure), userInfo: nil, repeats: false)
-        
         guard let touch = touches.first else { return }
-        let results = sceneView.hitTest(touch.location(in: sceneView), types: [ARHitTestResult.ResultType.featurePoint])
-        guard let hitFeature = results.last else { return }
+        var results : [ARHitTestResult]
+        if planeDetectButton.currentTitle == "Plane Detection Off" {
+            results = sceneView.hitTest(touch.location(in: sceneView), types: [ARHitTestResult.ResultType.featurePoint])
+        } else {
+            results = sceneView.hitTest(touch.location(in: sceneView), types: [ARHitTestResult.ResultType.existingPlane])
+        }
+        
+        guard let hitFeature = results.last else {
+            if planeDetectButton.currentTitle == "Plane Detection Off" {
+                consoleLabel.text = "No feature points detected there.."
+            }
+            return
+        }
          hitTransform = SCNMatrix4(hitFeature.worldTransform)
         let tempHitPosition = SCNVector3Make(hitTransform!.m41,
                                          hitTransform!.m42,
                                          hitTransform!.m43)
         hitPosition = tempHitPosition
-//        treeNode?.position = hitPosition "Teleports the Original"
-
+        _ = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(checkTouchPressure), userInfo: nil, repeats: false)
     }
     
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         if let touch = touches.first {
             if traitCollection.forceTouchCapability == UIForceTouchCapability.available {
-                //                    print("LOOKS LIKE 3D TOUCH IS WORKING 🔥")
+                //print("LOOKS LIKE 3D TOUCH IS WORKING 🔥")
                 let touchForce = touch.force/touch.maximumPossibleForce
 //                print("\(touchForce)% of Maximum")
-                currentTouchPressure = Double(touchForce)
+                finalTouchPressure = Double(touchForce)
             }}
     }
     
-    @objc func whatsTheTouchPressure() {
-        finalTouchPressure = currentTouchPressure
-        let treeClone = treeNode!.clone()
-        
+    @objc func updateDetectedSurfaces() {
+        //Checks if the rootPlanePlane is placed.
+        if rootPlanePlaced == true && consoleLabel.text != "Surface detected!" {
+            consoleLabel.text = "Surface detected!"
+        } else if rootPlanePlaced == false {
+            switch consoleLabel.text! {
+            case "No surfaces detected.": consoleLabel.text = "No surfaces detected.."
+            case "No surfaces detected..": consoleLabel.text = "No surfaces detected..."
+            default: consoleLabel.text = "No surfaces detected."
+        }
+            let consoleRefreshTimer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(updateDetectedSurfaces), userInfo: nil, repeats: false)
+        }
+    }
+    
+    @objc func checkTouchPressure() {
+        var newNode : SCNNode!
+        let tree = drawRandomTree()
+        //Creates a copy of the rootNode from the randomly selected tree's SCNScene.
+        newNode = tree.rootNode.clone()
+        //Scales the tree before it is placed in the scene, based on the 3D Touch pressure recorded.
         if finalTouchPressure == 1.0 {
-//            print("Hard Pressure")
-            treeClone.scale = SCNVector3Make(0.1, 0.1, 0.1)
+            consoleLabel.text = "Hard tap!"
+            uiSoundFXEngine(playSound: "UISound - Heavy 3D Touch")
+            newNode.scale = SCNVector3Make(0.37, 0.37, 0.37)
         } else if finalTouchPressure >= 0.42 {
-//            print("Medium Pressure")
-            treeClone.scale = SCNVector3Make(0.05, 0.05, 0.05)
+            consoleLabel.text = "Medium tap!"
+            uiSoundFXEngine(playSound: "UISound - Medium 3D Touch")
+            newNode.scale = SCNVector3Make(0.25, 0.25, 0.25)
         } else {
-//            print("Soft Pressure")
-            treeClone.scale = SCNVector3Make(0.01, 0.01, 0.01)
+            consoleLabel.text = "Soft tap!"
+            uiSoundFXEngine(playSound: "UISound - Soft 3D Touch")
+            newNode.scale = SCNVector3Make(0.15, 0.15, 0.15)
         }
+        //Positions and adds our new tree to the scene.
         if hitPosition != nil {
-            treeClone.position = hitPosition!
-            sceneView.scene.rootNode.addChildNode(treeClone)
+            newNode.position = hitPosition!
+            sceneView.scene.rootNode.addChildNode(newNode)
         }
+        //Resets the console after 2 seconds.
+         let consoleRefreshTimer = Timer.scheduledTimer(timeInterval: 2, target: self, selector: #selector(resetConsoleText), userInfo: nil, repeats: false)
+    }
+
+    func drawRandomTree() -> SCNScene {
+        //Randomly selects a string from the arrayOfTrees.
+        let randomlySelectedTree = arc4random() % UInt32(arrayOfTrees.count)
+        let selectedTreeName = arrayOfTrees[Int(randomlySelectedTree)]
+        let selectedModel = SCNScene(named: "art.scnassets/\(selectedTreeName)")
+        return selectedModel!
+    }
+    
+    
+    @IBAction func planeDetectionToggled(_ sender: Any) {
+        if planeDetectButton.currentTitle == "Plane Detection On" {
+            planeDetectButton.setTitle("Plane Detection Off", for: .normal)
+            rootPlaneHandicap = true
+            rootPlanePlaced = true
+        } else if planeDetectButton.currentTitle == "Plane Detection Off" {
+            planeDetectButton.setTitle("Plane Detection On", for: .normal)
+            rootPlaneHandicap = false
+            rootPlanePlaced = false
+            updateDetectedSurfaces()
+        }
+    }
+    
+    @IBAction func resetScenePressed(_ sender: Any) {
+        //Erases the scene and world origin.
+        self.rootPlanePlaced = false
+        self.sceneView.session.pause()
+        self.sceneView.scene.rootNode.enumerateChildNodes { (newChildNode, _) in
+            newChildNode.removeFromParentNode()
+        }
+        self.sceneView.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
+        if planeDetectButton.currentTitle == "Plane Detection On" {
+            planeDetectionToggled(self)
+        }
+        uiSoundFXEngine(playSound: "UISound - Reset Scene")
+        viewDidLoad()
+    }
+    
+    @objc func resetConsoleText() {
+        consoleLabel.text = ""
     }
     
 
-    
-    func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user
-        
-    }
-    
-    func sessionWasInterrupted(_ session: ARSession) {
-        // Inform the user that the session has been interrupted, for example, by presenting an overlay
-        
-    }
-    
-    func sessionInterruptionEnded(_ session: ARSession) {
-        // Reset tracking and/or remove existing anchors if consistent tracking is required
-    }
-}
+} //End of page
 
